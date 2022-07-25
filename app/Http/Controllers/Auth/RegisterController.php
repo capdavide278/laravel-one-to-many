@@ -4,9 +4,12 @@ namespace App\Http\Controllers\Auth;
 
 use App\Models\User;
 use App\Models\UserDetails;
+use Illuminate\Http\Request;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Auth\Events\Registered;
 use App\Providers\RouteServiceProvider;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Foundation\Auth\RegistersUsers;
@@ -68,7 +71,7 @@ class RegisterController extends Controller
      * @return \App\Models\User
      */
     protected function create(array $data)
-    {
+    {   
         $user = DB::transaction(function () use ($data){
             $user = User::create([
                 'name'     => $data['name'],
@@ -87,5 +90,28 @@ class RegisterController extends Controller
         });
         
         return $user;
+    }
+    public function register(Request $request)
+    {
+        $this->validator($request->all())->validate();
+
+        $user = $this->create($request->all());
+
+        if($user) {
+
+            event(new Registered($user));
+    
+            $this->guard()->login($user);
+    
+            if ($response = $this->registered($request, $user)) {
+                return $response;
+            }
+    
+            return $request->wantsJson()
+                        ? new JsonResponse([], 201)
+                        : redirect($this->redirectPath());
+        } else{
+           return redirect()->route('register')->with('db-error', 'Errore del DB riprovare');
+        }
     }
 }
