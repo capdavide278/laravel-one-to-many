@@ -13,4 +13,8 @@ class UserDetails extends Model
     ];
     // determina il nome della tabella sovrascrivendo la convenzione del plurale
     protected $table = 'user_details';
+
+    public function user(){
+        return $this->belongsTo('App\Models\User'); //nella tabella con il foreign key
+    }
 }
